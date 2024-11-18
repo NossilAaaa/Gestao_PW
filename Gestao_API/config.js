@@ -14,7 +14,7 @@ if (isProduction) {
     user: 'postgres',
     host: 'localhost',
     database: 'Gestao',
-    password: 'postgres12',
+    password: 'postgres',
     port: 5432
   })
 }

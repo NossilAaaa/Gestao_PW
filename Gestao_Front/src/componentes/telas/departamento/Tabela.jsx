@@ -6,7 +6,7 @@ import DepartamentoContext from "./DepartamentoContext";
 function Tabela() {
     const { alerta, remover, novoDepartamento, editarDepartamento } = useContext(DepartamentoContext);
     const [listaDepartamentos, setListaDepartamentos] = useState([]);
-    const [carregando, setCarregando] = useState(true);  // Adiciona estado de carregamento
+    const [carregando, setCarregando] = useState(true);  // Estado de carregamento
 
     // Busca os departamentos na API ao carregar o componente
     useEffect(() => {

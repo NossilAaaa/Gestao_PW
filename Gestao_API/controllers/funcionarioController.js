@@ -23,6 +23,7 @@ const getFuncionarioPorId = async (request, response) => {
 
 const adicionarFuncionario = async (request, response) => {
     console.log('[INFO] Iniciando adição de novo funcionário...');
+  
     try {
         const data = await addFuncionarioDB(request.body);
         console.log('[SUCCESS] Funcionário adicionado com sucesso:', data);

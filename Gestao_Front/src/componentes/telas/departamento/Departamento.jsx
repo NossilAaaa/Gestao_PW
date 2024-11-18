@@ -15,7 +15,7 @@ function Departamento() {
     const [editar, setEditar] = useState(false);
     const [exibirForm, setExibirForm] = useState(false);
     const [departamento, setDepartamento] = useState({ id: '', nome: '', localizacao: '' });
-    const [carregando, setCarregando] = useState(false);
+    const [carregando, setCarregando] = useState(false);  // Estado de carregamento
 
     // Função para iniciar novo departamento
     const novoDepartamento = () => {
@@ -30,14 +30,17 @@ function Departamento() {
     const editarDepartamento = async (id) => {
         console.log(`Editando departamento com id: ${id}`);
         try {
+            setCarregando(true);  // Inicia o carregamento
             const dados = await getDepartamentoPorCodigoAPI(id);
             console.log('Departamento encontrado:', dados);
-            setDepartamento(dados); // Dados deve incluir o id do departamento
+            setDepartamento(dados); 
             setEditar(true);
             setExibirForm(true);
         } catch (erro) {
             console.error("Erro ao buscar o departamento para edição:", erro);
             setAlerta({ status: "error", message: "Erro ao carregar o departamento" });
+        } finally {
+            setCarregando(false);  // Finaliza o carregamento
         }
     };
 
@@ -46,7 +49,8 @@ function Departamento() {
         e.preventDefault();
         try {
             console.log('Salvando departamento...');
-            const retornoAPI = await cadastraDepartamentoAPI(departamento); // A função já lida com POST ou PUT dependendo da condição
+            setCarregando(true);  // Inicia o carregamento
+            const retornoAPI = await cadastraDepartamentoAPI(departamento); 
             console.log('Resposta da API:', retornoAPI);
             setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
 
@@ -61,6 +65,8 @@ function Departamento() {
         } catch (err) {
             console.error("Erro ao salvar departamento:", err);
             setAlerta({ status: "error", message: "Erro ao salvar o departamento" });
+        } finally {
+            setCarregando(false);  // Finaliza o carregamento
         }
     };
 
@@ -75,16 +81,16 @@ function Departamento() {
 
     const recuperaDepartamentos = async () => {
         console.log('Recuperando lista de departamentos...');
-        setCarregando(true);
+        setCarregando(true);  // Inicia o carregamento
         try {
             const departamentos = await getDepartamentoAPI();
             console.log('Departamentos recuperados:', departamentos);
-            setListaDepartamentos(departamentos);
+            setListaDepartamentos(departamentos.departamentos);
         } catch (erro) {
             console.error("Erro ao recuperar departamentos:", erro);
             setAlerta({ status: "error", message: "Erro ao carregar departamentos" });
         } finally {
-            setCarregando(false);
+            setCarregando(false);  // Finaliza o carregamento
         }
     }
 
@@ -117,13 +123,13 @@ function Departamento() {
                 departamento,
                 editarDepartamento,
                 novoDepartamento,
-                salvarDepartamento,  // Substitui acaoCadastrar por salvarDepartamento
+                salvarDepartamento,  
                 handleChange,
                 exibirForm,
                 setExibirForm
             }}>
                 <div className="tabela-container">
-                    <Carregando carregando={carregando}>
+                    <Carregando carregando={carregando}>  {/* Carregamento condicional */}
                         <Tabela />
                     </Carregando>
                 </div>

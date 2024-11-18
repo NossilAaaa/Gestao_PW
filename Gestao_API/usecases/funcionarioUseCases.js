@@ -2,13 +2,14 @@ const { pool } = require('../config');
 const Funcionario = require('../entities/funcionario');
 
 const addFuncionarioDB = async (body) => {
+    console.log("body db: " +JSON.stringify(body));
     try {
-        const { id, nome, cargo, salario, departamento_id } = body;  // Agora espera o 'id' no corpo
-        const results = await pool.query(`
-            INSERT INTO funcionarios (id, nome, cargo, salario, departamento_id)
-            VALUES ($1, $2, $3, $4, $5)
+        const { id, nome, cargo, salario, departamento_id } = body;  
+        console.log('id: ' + id)
+        const results = await pool.query(`INSERT INTO funcionarios (id, nome, cargo, salario, departamento_id)
+            VALUES ($1,$2,$3,$4,$5)
             RETURNING id, nome, cargo, salario, departamento_id`,
-        [id, nome, cargo, salario, departamento_id]);  // Passa o 'id' manualmente
+        [id, nome, cargo, salario, departamento_id]);  
 
         const funcionario = results.rows[0];
         return new Funcionario(funcionario.id, funcionario.nome, funcionario.cargo, funcionario.salario, funcionario.departamento_id);

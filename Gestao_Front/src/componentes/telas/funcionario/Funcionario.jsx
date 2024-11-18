@@ -1,104 +1,185 @@
 import { useState, useEffect } from "react";
-import FuncionarioContext from "./FuncionarioContext"; 
+import FuncionarioContext from "./FuncionarioContext";
 import {
-    getFuncionarioAPI, getFuncionarioPorCodigoAPI, cadastraFuncionarioAPI,
+    getFuncionarioAPI,
+    getFuncionarioPorCodigoAPI,
+    cadastraFuncionarioAPI,
     deleteFuncionarioPorCodigoAPI
 } from "../../../servicos/FuncionarioServico";
 import Tabela from "./Tabela";
-import '../Home.css'
+import '../Home.css';
 import Formulario from "./Formulario";
 import Carregando from "../../comuns/Carregando";
+import {
+    getDepartamentoAPI
+} from "../../../servicos/DepartamentoServico";
 
 function Funcionario() {
-
     const [alerta, setAlerta] = useState({ status: "", message: "" });
     const [listaFuncionarios, setListaFuncionarios] = useState([]);
     const [editar, setEditar] = useState(false);
     const [exibirForm, setExibirForm] = useState(false);
+    const [carregando, setCarregando] = useState(false);
+    
     const [funcionario, setFuncionario] = useState({
         id: 0,
         nome: "",
         cargo: "",
         salario: 0.00,
-        departamento_id: 0
+        departamento_id: 0  
     });
-    const [carregando, setCarregando] = useState(false);
 
+    const [departamentos, setDepartamentos] = useState([]);
+
+    // Função para cadastrar um novo funcionário
     const novoFuncionario = () => {
-        setEditar(false);
-        setAlerta({ status: "", message: "" });
+        setEditar(false);  
         setFuncionario({
             id: 0,
             nome: "",
             cargo: "",
             salario: 0.00,
-            departamento_id: 0
-        })
-        setExibirForm(true);
-    }
+            departamento_id: 0 
+        });
+        setExibirForm(true);  
+        setAlerta({ status: "", message: "" });  
+    };
 
-    const editarFuncionario = async id => {
-        setFuncionario(await getFuncionarioPorCodigoAPI(id)); // Atualizado para pegar funcionário por id
-        setEditar(true);
-        setAlerta({ status: "", message: "" });
-        setExibirForm(true);
-    }
+    // Função para editar um funcionário
+    const editarFuncionario = async (id) => {
+        try {
+            const funcionarioEditado = await getFuncionarioPorCodigoAPI(id);
+            if (funcionarioEditado) {
+                setFuncionario({
+                    ...funcionarioEditado,
+                    departamento_id: funcionarioEditado.departamento_id || 0  // Garantir que o departamento_id seja um número
+                });
+                setEditar(true);
+                setExibirForm(true);
+                setAlerta({ status: "", message: "" });
+            } else {
+                setAlerta({ status: "error", message: "Funcionário não encontrado" });
+            }
+        } catch (error) {
+            console.error("Erro ao editar funcionário:", error);
+        }
+    };
 
-    const acaoCadastrar = async e => {
+    const acaoCadastrar = async (e) => {
         e.preventDefault();
         const metodo = editar ? "PUT" : "POST";
-        try {
-            let retornoAPI = await cadastraFuncionarioAPI(funcionario, metodo); // Alterado para método de funcionário
-            setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
-            setFuncionario(retornoAPI.funcionario);
-            if (!editar) {
-                setEditar(true);
-            }
-        } catch (err) {
-            console.log("Erro: " + err);
+    
+        // Verifica o valor do departamento_id antes de realizar a validação
+        console.log("Departamento ID: ", funcionario.departamento_id);
+    
+        if (funcionario.departamento_id === null || funcionario.departamento_id === undefined || funcionario.departamento_id === 0) {
+            setAlerta({ status: "error", message: "O departamento deve ser selecionado!" });
+            return;
         }
-        recuperaFuncionarios();
-    }
+    
+        try {
+            const retornoAPI = await cadastraFuncionarioAPI(funcionario, metodo);
+            if (retornoAPI) {
+                setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
+                if (!editar) setFuncionario(retornoAPI.funcionario);
+                recuperaFuncionarios(); // Atualizar a lista após cadastro/edição
+                setExibirForm(false);
+            }
+        } catch (error) {
+            console.error("Erro ao cadastrar funcionário:", error);
+        }
+    };
+    
+    
+    
 
     const handleChange = (e) => {
-        const name = e.target.name;
-        const value = e.target.value;
-        setFuncionario({ ...funcionario, [name]: value });
-    }
+        const { name, value } = e.target;
+        console.log(`Mudança no campo ${name}: ${value}`);  // Log para depuração
+    
+        if (name === "departamento_id") {
+            const numeroValue = Number(value) || 0;
+            console.log(`Departamento ID após conversão: ${numeroValue}`);  // Log para depuração
+            setFuncionario({ ...funcionario, [name]: numeroValue });
+        } else {
+            setFuncionario({ ...funcionario, [name]: value });
+        }
+    };
+    
+    
 
+    // Função para recuperar a lista de funcionários
     const recuperaFuncionarios = async () => {
         setCarregando(true);
-        setListaFuncionarios(await getFuncionarioAPI()); // Atualizado para pegar lista de funcionários
-        setCarregando(false);
-    }
-
-    const remover = async id => {
-        if (window.confirm('Deseja remover este funcionário?')) {
-            let retornoAPI = await deleteFuncionarioPorCodigoAPI(id); // Alterado para deletar por ID
-            setAlerta({
-                status: retornoAPI.status,
-                message: retornoAPI.message
-            });
-            recuperaFuncionarios();
+        try {
+            const lista = await getFuncionarioAPI();
+            setListaFuncionarios(lista);
+        } catch (error) {
+            console.error("Erro ao carregar funcionários:", error);
+        } finally {
+            setCarregando(false);
         }
-    }
+    };
 
+    const recuperaDepartamentos = async () => {
+        try {
+            const departamentos = await getDepartamentoAPI();
+            console.log('Resposta da API:', departamentos);
+            if (departamentos && departamentos.departamentos) {
+                setDepartamentos(departamentos.departamentos);
+            } else {
+                console.error("Estrutura de dados inesperada:", departamentos);
+            }
+        } catch (erro) {
+            console.error("Erro ao recuperar departamentos:", erro);
+        }
+    };
+    
+
+    // Função para remover um funcionário
+    const remover = async (id) => {
+        if (window.confirm('Deseja remover este funcionário?')) {
+            try {
+                const retornoAPI = await deleteFuncionarioPorCodigoAPI(id);
+                setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
+                recuperaFuncionarios(); // Atualizar lista após remoção
+            } catch (error) {
+                console.error("Erro ao remover funcionário:", error);
+            }
+        }
+    };
+
+    // Recuperar funcionários ao montar o componente
     useEffect(() => {
         recuperaFuncionarios();
+        recuperaDepartamentos();
     }, []);
+
+    useEffect(() => {
+        console.log("Estado do funcionário após carregamento: ", funcionario);
+    }, [funcionario]);
 
     return (
         <div className="funcionario">
             <FuncionarioContext.Provider value={{
-                alerta, listaFuncionarios, remover, funcionario, editarFuncionario,
-                novoFuncionario, acaoCadastrar, handleChange, exibirForm, setExibirForm
+                alerta,
+                listaFuncionarios,
+                remover,
+                funcionario,
+                editarFuncionario,
+                novoFuncionario,
+                acaoCadastrar,
+                handleChange,
+                exibirForm,
+                setExibirForm,
+                departamentos
             }}>
                 <div className="tabela">
                     <Carregando carregando={carregando}>
                         <Tabela />
                     </Carregando>
                 </div>
-                <Formulario />
+                 <Formulario />
             </FuncionarioContext.Provider>
         </div>
     );
